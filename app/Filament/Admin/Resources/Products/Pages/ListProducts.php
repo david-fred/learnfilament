@@ -27,7 +27,7 @@ class ListProducts extends ListRecords
                         ->required()
                         ->searchable(),
                     TextInput::make('amount')
-                        ->label('Amount')
+                        ->label('Quantity')
                         ->numeric()
                         ->required()
 

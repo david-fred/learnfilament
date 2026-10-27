@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum ProductStatusEnum: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum ProductStatusEnum: string implements HasLabel, HasColor
 {
     case IN_STOCK = 'in_stock';
     case OUT_OF_STOCK = 'out_of_stock';
@@ -11,11 +14,16 @@ enum ProductStatusEnum: string
 
     public function getLabel(): string
     {
+        return  $this->value;
+    }
+
+    public function getColor(): string
+    {
         return match ($this) {
-            self::IN_STOCK => 'In stock',
-            self::OUT_OF_STOCK => 'Out of stock',
-            self::DISCONTINUED => 'Discontinued',
-            self::COMING_SOON => 'Coming soon',
+            self::IN_STOCK => 'success',
+            self::OUT_OF_STOCK => 'danger',
+            self::DISCONTINUED => 'warning',
+            self::COMING_SOON => 'primary',
         };
     }
 }

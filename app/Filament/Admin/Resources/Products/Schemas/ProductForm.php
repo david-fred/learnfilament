@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Products\Schemas;
 
 use App\Enums\ProductStatusEnum;
+use Filament\Forms\Components\ModalTableSelect;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\TextInput;
@@ -25,6 +26,14 @@ class ProductForm
                 Select::make('status')
                     ->options(ProductStatusEnum::class)
                     ->required(),
+                Select::make('tags')
+                    ->relationship('tags', 'name')
+                    ->multiple()
+                    ->required(),
+
+                /**ModalTableSelect::make('category_id')
+                ->relationship('category', 'name')
+                ->**/ 
                 Select::make('category_id')
                     ->relationship('category', 'name')
                     ->required(),
