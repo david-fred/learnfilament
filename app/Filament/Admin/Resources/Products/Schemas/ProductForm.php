@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\Products\Schemas;
 
+use App\Enums\ProductStatusEnum;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\TextInput;
 
@@ -11,9 +13,27 @@ class ProductForm
     {
         return $schema
             ->components([
-                TextInput::make('name'),
-                TextInput::make('price'),
-                TextInput::make('description'),
+                TextInput::make('name')
+                    ->required()
+                    ->unique(),
+                TextInput::make('price')
+                    ->prefix('₦')
+                    ->required()
+                    ->rule('numeric'),
+                TextInput::make('description')
+                    ->required(),
+                Select::make('status')
+                    ->options(ProductStatusEnum::class)
+                    ->required(),
+                Select::make('category_id')
+                    ->relationship('category', 'name')
+                    ->required(),
+                TextInput::make('amount')
+                    ->label('Amount')
+                    ->numeric()
+                    ->default(0)
+                    ->required()
+
             ]);
     }
 }
