@@ -18,6 +18,7 @@ use Filament\Forms\Components\Checkbox;
 use Illuminate\Collections\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Filament\Admin\Resources\Orders\OrderResource;
+use Filament\Tables\Columns\ToggleColumn;
 
 /*use Filament\Support\Icons\Icon;
 use Filament\Support\Icons\Icons;
@@ -50,6 +51,14 @@ class OrdersTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                ToggleColumn::make('is_completed')
+                    //->badge()
+                   // ->toggleable()
+                 /*  ->color(fn(string $state): string => match ($state) {
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        default => 'gray',
+                    })*/
             ])
             ->defaultGroup('product.name')
             ->filters([
@@ -57,7 +66,7 @@ class OrdersTable
             ])
             ->recordActions([
                 //ActionGroup::make([
-                EditAction::make(),
+                // EditAction::make(),
                 /*  Action::make('Change is completed')
                         ->icon(Heroicon::OutlinedCheckBadge)
                         ->fillForm(function (Order $order) {
@@ -74,12 +83,12 @@ class OrdersTable
                             ]);
                         })*/
 
-                Action::make('markAsCompleted')
+              /*  Action::make('markAsCompleted')
                     ->label('Mark as completed')
                     ->requiresConfirmation()
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->hidden(fn(Order $record) => $record->is_completed)
-                    ->action(fn(Order $record) => $record->update(['is_completed' => true])),
+                    ->action(fn(Order $record) => $record->update(['is_completed' => true])),*/
 
                 /*->label('')
                 ->icon('heroicon-o-check-circle')
@@ -91,19 +100,19 @@ class OrdersTable
                 })*/
                 // ]),
             ])
-           /* ->headerActions([
+            /* ->headerActions([
                 Action::make('New Order')
                 ->url(fn(): string => OrderResource::getUrl('create')),
             ])*/
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    BulkAction::make('markAsCompleted')
-                        ->icon(Heroicon::OutlinedCheckBadge)
-                        ->requiresConfirmation()
-                        ->action(fn(EloquentCollection $records) => $records->each->update(['is_completed' => true]))
-                        ->deselectRecordsAfterCompletion(),
-                ]),
+                //BulkActionGroup::make([
+                //DeleteBulkAction::make(),
+                BulkAction::make('markAsCompleted')
+                    ->icon(Heroicon::OutlinedCheckBadge)
+                    ->requiresConfirmation()
+                    ->action(fn(EloquentCollection $records) => $records->each->update(['is_completed' => true]))
+                    ->deselectRecordsAfterCompletion(),
+                //]),
             ]);
     }
 }

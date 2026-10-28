@@ -21,6 +21,8 @@ use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Columns\TextInputColumn;
+use Filament\Notifications\Notification;
+use Filament\Actions\ActionGroup;
 
 
 
@@ -30,8 +32,9 @@ class ProductsTable
     {
         return $table
             ->columns([
-                TextInputColumn::make('name')
-                ->rules(['required', 'string', 'min:3', 'max:255']),
+                TextColumn::make('name')
+                    ->searchable(),
+                // ->rules(['required', 'string', 'min:3', 'max:255']),
                 TextColumn::make('price')
                     ->sortable()
                     ->formatStateUsing(fn($state): float => $state / 100)
@@ -83,19 +86,34 @@ class ProductsTable
                     }),
             ], layout: FiltersLayout::AboveContent)
             ->recordActions([
-                Action::make('addStock')
-                    ->label('Add Stock')
-                    ->form([
-                        TextInput::make('quantity')
-                            ->numeric()
-                            ->required(),
-                    ])
-                    ->action(function (array $data, $record) {
-                        $record->increment('stock', $data['quantity']);
-                    }),
+                ActionGroup::make([
+                    Action::make('addStock')
+                        ->label('Add Stock')
+                        ->badge()
+                        ->color('success')
+                        ->schema([
+                            TextInput::make('quantity')
+                                ->numeric()
+                                ->required(),
+                        ])
+                        ->action(function (array $data, $record) {
+                            $record->increment('amount', $data['quantity']);
+                        }),
 
-                EditAction::make(),
-                DeleteAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make()
+                        ->before(function (DeleteAction $action, Product $record) {
+                            if ($record->orders()->exists()) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Cannot delete product')
+                                    ->body('This product has existing orders.')
+                                    ->send();
+
+                                $action->halt();
+                            }
+                        })
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

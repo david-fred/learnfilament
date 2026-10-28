@@ -6,9 +6,21 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables\Columns\IconColumn;
+//use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Actions\BulkAction;
+//use Filament\Support\Enums\Icon;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use App\Actions\UpdateCustomerAction;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Forms\Components\TextInput;
+use App\Models\Customer;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
 
 class CustomersTable
 {
@@ -17,13 +29,12 @@ class CustomersTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(isIndividual: true, isGlobal: false)
+                    ->searchable(isGlobal: true)
                     ->sortable(),
                 TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
-                IconColumn::make('is_verified')
-                    ->boolean()
+                ToggleColumn::make('is_verified')
                     ->label('Verified'),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -40,12 +51,33 @@ class CustomersTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                ActionGroup::make([
+                    EditAction::make()
+                        ->schema([
+                            TextInput::make('name')->required(),
+                            TextInput::make('email')->required()->email(),
+                        ])
+                        ->action(function (Customer $record, array $data, UpdateCustomerAction $updateCustomer): void {
+                            try {
+                                $updateCustomer->handle($record, $data);
+                                Notification::make()->title('Customer updated successfully')->success()->send();
+                            } catch (\Throwable $e) {
+                                Notification::make()->title('Error updating customer')->body($e->getMessage())->danger()->send();
+                            }
+                        }),
+                    DeleteAction::make()
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                    // DeleteBulkAction::make(),
+                    BulkAction::make('markAsVerified')
+                        ->icon(Heroicon::OutlinedCheckBadge)
+                        ->requiresConfirmation()
+                        ->action(fn(EloquentCollection $records) => $records->each->update(['is_verified' => true]))
+                        ->deselectRecordsAfterCompletion(),
+                    //]),
+                ])
             ]);
     }
 }

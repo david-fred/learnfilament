@@ -7,14 +7,14 @@ use Filament\Support\Contracts\HasLabel;
 
 enum ProductStatusEnum: string implements HasLabel, HasColor
 {
-    case IN_STOCK = 'in_stock';
-    case OUT_OF_STOCK = 'out_of_stock';
+    case IN_STOCK = 'in stock';
+    case OUT_OF_STOCK = 'out of stock';
     case DISCONTINUED = 'discontinued';
-    case COMING_SOON = 'coming_soon';
+    case COMING_SOON = 'coming soon';
 
     public function getLabel(): string
     {
-        return  $this->value;
+        return $this->value;
     }
 
     public function getColor(): string

@@ -10,7 +10,13 @@ class CustomerInfolist
     public static function configure(Schema $schema): Schema
     {
         return $schema
-            ->components([
+        ->components([
+                TextEntry::make('name')
+                    //->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('email')
+                    //->dateTime()
+                    ->placeholder('-'),
                 TextEntry::make('created_at')
                     ->dateTime()
                     ->placeholder('-'),

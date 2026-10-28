@@ -5,6 +5,8 @@ namespace App\Filament\Admin\Resources\Products\Pages;
 use App\Filament\Admin\Resources\Products\ProductResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Notifications\Notification;
+use App\Models\Product;
 
 class EditProduct extends EditRecord
 {
@@ -13,7 +15,18 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+            ->before(function (DeleteAction $action, Product $record) {
+                if ($record->orders()->exists()) {
+                    Notification::make()
+                        ->danger()
+                        ->title('Cannot delete product')
+                        ->body('This product has existing orders.')
+                        ->send();
+
+                    $action->halt();
+                }
+            }),
         ];
     }
 

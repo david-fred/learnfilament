@@ -20,7 +20,7 @@ class CategoryFactory extends Factory
 
     public function definition(): array
     {
-       $name = fake(5)->unique()->word();
+       $name = fake()->unique()->words(3, true);
 
         return [
             'name' => ucfirst($name),

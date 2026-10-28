@@ -20,7 +20,7 @@ class ProductForm
                 TextInput::make('price')
                     ->prefix('₦')
                     ->required()
-                    ->rule('numeric'),
+                    ->numeric(),
                 TextInput::make('description')
                     ->required(),
                 Select::make('status')
@@ -28,6 +28,7 @@ class ProductForm
                     ->required(),
                 Select::make('tags')
                     ->relationship('tags', 'name')
+                    ->preload()
                     ->multiple()
                     ->required(),
 
