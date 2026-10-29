@@ -21,25 +21,25 @@ class ProductForm
                     ->prefix('₦')
                     ->required()
                     ->numeric(),
-                TextInput::make('description')
-                    ->required(),
+                TextInput::make('description'),
+                    //->required(),
                 Select::make('status')
-                    ->options(ProductStatusEnum::class)
-                    ->required(),
+                    ->options(ProductStatusEnum::class),
+                   // ->required(),
                 Select::make('tags')
                     ->relationship('tags', 'name')
                     ->preload()
-                    ->multiple()
-                    ->required(),
+                    ->multiple(),
+                   // ->required(),
 
                 /**ModalTableSelect::make('category_id')
                 ->relationship('category', 'name')
                 ->**/ 
                 Select::make('category_id')
-                    ->relationship('category', 'name')
-                    ->required(),
+                    ->relationship('category', 'name'),
+                  //  ->required(),
                 TextInput::make('amount')
-                    ->label('Amount')
+                    ->label('Stock Quantity')
                     ->numeric()
                     ->default(0)
                     ->required()

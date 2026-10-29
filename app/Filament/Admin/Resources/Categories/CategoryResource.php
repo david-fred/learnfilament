@@ -16,11 +16,13 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Actions\UpdateCategoryAction;
+use App\Actions\DeleteRecordAction;
 
 class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
-    
+
     protected static ?int $navigationSort = 4;
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -60,8 +62,16 @@ class CategoryResource extends Resource
             ])
             ->recordActions([
                 ActionGroup::make([
-                    EditAction::make(),
-                    DeleteAction::make(),
+                    EditAction::make()
+                        ->successNotification(null)
+                        ->action(function (Category $record, array $data, UpdateCategoryAction $action) {
+                            $action->handle($record, $data);
+                        }),
+                    DeleteAction::make()
+                        ->successNotification(null)
+                        ->action(function (Category $record, DeleteRecordAction $action) {
+                            $action->handle($record);
+                        }),
                 ])
             ])
             ->toolbarActions([
@@ -77,5 +87,4 @@ class CategoryResource extends Resource
             'index' => ManageCategories::route('/'),
         ];
     }
-
 }

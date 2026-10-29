@@ -60,7 +60,7 @@ class OrdersTable
                         default => 'gray',
                     })*/
             ])
-            ->defaultGroup('product.name')
+            //->defaultGroup('product.name')
             ->filters([
                 //
             ])

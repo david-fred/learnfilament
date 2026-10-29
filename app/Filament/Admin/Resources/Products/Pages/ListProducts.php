@@ -44,6 +44,7 @@ class ListProducts extends ListRecords
                 }),
 
             CreateAction::make()
+                ->successNotification(null)
                 ->action(function (CreateProductAction $createProduct, array $data) {
                     try {
                         $createProduct->handle($data);
@@ -55,7 +56,7 @@ class ListProducts extends ListRecords
                         Notification::make()
                             ->title('Error creating product')
                             ->body($e->getMessage())
-                            ->error()
+                            ->danger()
                             ->send();
                         Log::error($e->getMessage());
                     }

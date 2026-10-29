@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Models\Customer;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class CreateCustomerAction
@@ -18,8 +19,6 @@ class CreateCustomerAction
             'email' => ['required', 'string', 'email', 'unique:customers']
         ])->validate();
 
-        $customer = Customer::create($validated);
-
-        return $customer;
+        return DB::transaction(fn() => Customer::create($validated));
     }
 }

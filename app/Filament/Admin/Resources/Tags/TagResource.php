@@ -16,6 +16,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Actions\UpdateTagAction;
+use App\Actions\DeleteRecordAction;
 
 class TagResource extends Resource
 {
@@ -54,8 +56,16 @@ class TagResource extends Resource
             ])
             ->recordActions([
                 ActionGroup::make([
-                    EditAction::make(),
-                    DeleteAction::make(),
+                    EditAction::make()
+                        ->successNotification(null)
+                        ->action(function (Tag $record, array $data, UpdateTagAction $updateTagAction) {
+                            $updateTagAction->handle($record, $data);
+                        }),
+                    DeleteAction::make()
+                        ->successNotification(null)
+                        ->action(function (Tag $record, DeleteRecordAction $deleteRecordAction) {
+                            $deleteRecordAction->handle($record);
+                        }),
                 ])
             ])
             ->toolbarActions([

@@ -25,6 +25,7 @@ class ListCustomers extends ListRecords
     {
         return [
             CreateAction::make()
+                ->successNotification(null)
                 ->schema([
                     TextInput::make('name')
                         ->required()
@@ -40,7 +41,7 @@ class ListCustomers extends ListRecords
                             ->title('Customer created successfully')
                             ->success()
                             ->send();
-                    } catch (Throwable $e) {
+                    } catch (\Throwable $e) {
                         Notification::make()
                             ->title('Error creating customer')
                             ->body($e->getMessage())

@@ -21,6 +21,7 @@ use Filament\Forms\Components\TextInput;
 use App\Models\Customer;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
+use App\Actions\DeleteRecordAction;
 
 class CustomersTable
 {
@@ -53,6 +54,7 @@ class CustomersTable
                 ViewAction::make(),
                 ActionGroup::make([
                     EditAction::make()
+                    ->successNotification(null)
                         ->schema([
                             TextInput::make('name')->required(),
                             TextInput::make('email')->required()->email(),
@@ -66,6 +68,10 @@ class CustomersTable
                             }
                         }),
                     DeleteAction::make()
+                        ->successNotification(null)
+                        ->action(function (Customer $record, DeleteRecordAction $action) {
+                            $action->handle($record);
+                        }),
                 ]),
             ])
             ->toolbarActions([

@@ -21,7 +21,7 @@ class OrderForm
                 TextInput::make('price')
                     ->required()
                     ->numeric()
-                    ->prefix('$'),
+                    ->prefix('₦'),
             ]);
     }
 }
