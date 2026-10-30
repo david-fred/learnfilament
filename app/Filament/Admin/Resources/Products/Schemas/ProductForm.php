@@ -22,22 +22,22 @@ class ProductForm
                     ->required()
                     ->numeric(),
                 TextInput::make('description'),
-                    //->required(),
+                //->required(),
                 Select::make('status')
-                    ->options(ProductStatusEnum::class),
-                   // ->required(),
+                    ->options(ProductStatusEnum::class)
+                    ->required(),
                 Select::make('tags')
                     ->relationship('tags', 'name')
                     ->preload()
                     ->multiple(),
-                   // ->required(),
+                // ->required(),
 
                 /**ModalTableSelect::make('category_id')
                 ->relationship('category', 'name')
-                ->**/ 
+                ->**/
                 Select::make('category_id')
                     ->relationship('category', 'name'),
-                  //  ->required(),
+                //  ->required(),
                 TextInput::make('amount')
                     ->label('Stock Quantity')
                     ->numeric()

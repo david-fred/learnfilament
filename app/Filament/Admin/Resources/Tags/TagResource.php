@@ -17,7 +17,10 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use App\Actions\UpdateTagAction;
-use App\Actions\DeleteRecordAction;
+use App\Actions\DeleteTagAction;
+use App\Actions\BulkDeleteTagsAction;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+
 
 class TagResource extends Resource
 {
@@ -63,14 +66,13 @@ class TagResource extends Resource
                         }),
                     DeleteAction::make()
                         ->successNotification(null)
-                        ->action(function (Tag $record, DeleteRecordAction $deleteRecordAction) {
-                            $deleteRecordAction->handle($record);
-                        }),
+                        ->action(fn(Tag $record, DeleteTagAction $deleteTag) => $deleteTag->handle($record)),
                 ])
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+    ->action(fn (EloquentCollection $records, BulkDeleteTagsAction $bulkDelete) => $bulkDelete->handle($records)),
                 ]),
             ]);
     }

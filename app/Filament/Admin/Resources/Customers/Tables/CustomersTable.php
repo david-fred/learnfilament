@@ -2,8 +2,9 @@
 
 namespace App\Filament\Admin\Resources\Customers\Tables;
 
+use App\Actions\DeleteCustomerAction as ActionsDeleteCustomerAction;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 //use Filament\Tables\Columns\IconColumn;
@@ -15,13 +16,12 @@ use Filament\Actions\BulkAction;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use App\Actions\UpdateCustomerAction;
-use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\TextInput;
 use App\Models\Customer;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\DeleteAction;
-use App\Actions\DeleteRecordAction;
+use App\Actions\DeleteCustomerAction;
+
 
 class CustomersTable
 {
@@ -54,7 +54,7 @@ class CustomersTable
                 ViewAction::make(),
                 ActionGroup::make([
                     EditAction::make()
-                    ->successNotification(null)
+                        ->successNotification(null)
                         ->schema([
                             TextInput::make('name')->required(),
                             TextInput::make('email')->required()->email(),
@@ -69,9 +69,7 @@ class CustomersTable
                         }),
                     DeleteAction::make()
                         ->successNotification(null)
-                        ->action(function (Customer $record, DeleteRecordAction $action) {
-                            $action->handle($record);
-                        }),
+                        ->action(fn(Customer $record, DeleteCustomerAction $deleteCustomer) => $deleteCustomer->handle($record)),
                 ]),
             ])
             ->toolbarActions([

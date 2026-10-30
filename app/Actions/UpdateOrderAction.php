@@ -3,7 +3,6 @@
 namespace App\Actions;
 
 use App\Models\Order;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class UpdateOrderAction
@@ -17,6 +16,8 @@ class UpdateOrderAction
             'is_completed' => ['sometimes', 'boolean'],
         ])->validate();
 
-        return DB::transaction(fn() => tap($order)->update($validated));
+        $order->update($validated);
+
+        return $order;
     }
 }

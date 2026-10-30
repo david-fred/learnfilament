@@ -3,7 +3,6 @@
 namespace App\Actions;
 
 use App\Models\Tag;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +14,8 @@ class UpdateTagAction
             'name' => ['required', 'string', 'max:50', Rule::unique('tags')->ignore($tag->id)],
         ])->validate();
 
-        return DB::transaction(fn () => tap($tag)->update($validated));
+        $tag->update($validated);
+
+        return $tag;
     }
 }

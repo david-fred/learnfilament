@@ -10,8 +10,10 @@ class Customer extends Model
     use HasFactory;
 
     protected $guarded = [];
-
-    protected $casts = [
-        'is_verified' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'is_verified' => 'boolean',
+        ];
+    }
 }

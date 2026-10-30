@@ -3,7 +3,6 @@
 namespace App\Actions;
 
 use App\Models\Order;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class CreateOrderAction
@@ -17,6 +16,6 @@ class CreateOrderAction
             'is_completed' => ['sometimes', 'boolean'],
         ])->validate();
 
-        return DB::transaction(fn() => Order::create($validated));
+        return Order::create($validated);
     }
 }

@@ -16,17 +16,7 @@ class EditProduct extends EditRecord
     {
         return [
             DeleteAction::make()
-            ->before(function (DeleteAction $action, Product $record) {
-                if ($record->orders()->exists()) {
-                    Notification::make()
-                        ->danger()
-                        ->title('Cannot delete product')
-                        ->body('This product has existing orders.')
-                        ->send();
-
-                    $action->halt();
-                }
-            }),
+            
         ];
     }
 

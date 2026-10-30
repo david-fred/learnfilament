@@ -17,6 +17,15 @@ class Order extends Model
         'is_completed',
     ];
 
+
+    protected function casts(): array
+    {
+        return [
+            'is_completed' => 'boolean',
+        ];
+    }
+
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

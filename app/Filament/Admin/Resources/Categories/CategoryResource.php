@@ -17,7 +17,12 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use App\Actions\UpdateCategoryAction;
-use App\Actions\DeleteRecordAction;
+use App\Actions\DeleteCategoryAction;
+use App\Actions\BulkDeleteCategoriesAction;
+use DomainException;
+use Filament\Notifications\Notification;
+use Filament\Actions\Action;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class CategoryResource extends Resource
 {
@@ -69,14 +74,37 @@ class CategoryResource extends Resource
                         }),
                     DeleteAction::make()
                         ->successNotification(null)
-                        ->action(function (Category $record, DeleteRecordAction $action) {
-                            $action->handle($record);
+                        ->action(function (Category $record, DeleteCategoryAction $deleteCategory, Action $action) {
+                            try {
+                                $deleteCategory->handle($record);
+                            } catch (DomainException $e) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Cannot delete category')
+                                    ->body($e->getMessage())
+                                    ->send();
+
+                                $action->halt();
+                            }
                         }),
                 ])
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->action(function (EloquentCollection $records, BulkDeleteCategoriesAction $bulkDelete, Action $action) {
+                            try {
+                                $bulkDelete->handle($records);
+                            } catch (DomainException $e) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Cannot delete categories')
+                                    ->body($e->getMessage())
+                                    ->send();
+
+                                $action->halt();
+                            }
+                        }),
                 ]),
             ]);
     }

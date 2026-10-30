@@ -3,7 +3,7 @@
 namespace App\Actions;
 
 use App\Models\Tag;
-use Illuminate\Support\Facades\DB;
+
 use Illuminate\Support\Facades\Validator;
 
 class CreateTagAction
@@ -14,6 +14,6 @@ class CreateTagAction
             'name' => ['required', 'string', 'max:50', 'unique:tags'],
         ])->validate();
 
-        return DB::transaction(fn () => Tag::create($validated));
+        return Tag::create($validated);
     }
 }

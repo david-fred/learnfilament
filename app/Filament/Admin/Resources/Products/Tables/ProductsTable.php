@@ -19,10 +19,12 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\CheckboxColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Enums\FiltersLayout;
-use Filament\Tables\Columns\ToggleColumn;
-use Filament\Tables\Columns\TextInputColumn;
-use Filament\Notifications\Notification;
 use Filament\Actions\ActionGroup;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use App\Actions\BulkDeleteProductsAction;
+use App\Actions\DeleteProductAction;
+use DomainException;
 
 
 
@@ -89,35 +91,56 @@ class ProductsTable
                 ActionGroup::make([
                     Action::make('addStock')
                         ->label('Add Stock')
-                        ->badge()
                         ->color('success')
                         ->schema([
-                            TextInput::make('quantity')
+                            TextInput::make('amount')
+                                ->label('Quantity')
                                 ->numeric()
+                                ->minValue(1)
                                 ->required(),
                         ])
-                        ->action(function (array $data, $record) {
-                            $record->increment('amount', $data['quantity']);
+                        ->action(function (array $data, Product $record) {
+                            $record->increment('amount', $data['amount']);
+
+                            Notification::make()
+                                ->title('Stock added')
+                                ->success()
+                                ->send();
                         }),
 
                     EditAction::make(),
                     DeleteAction::make()
-                        ->before(function (DeleteAction $action, Product $record) {
-                            if ($record->orders()->exists()) {
+                        ->action(function (Product $record, DeleteProductAction $deleteProduct, Action $action) {
+                            try {
+                                $deleteProduct->handle($record);
+                            } catch (DomainException $e) {
                                 Notification::make()
                                     ->danger()
                                     ->title('Cannot delete product')
-                                    ->body('This product has existing orders.')
+                                    ->body($e->getMessage())
                                     ->send();
 
                                 $action->halt();
                             }
-                        })
+                        }),
                 ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->action(function (EloquentCollection $records, BulkDeleteProductsAction $bulkDelete, Action $action) {
+                            try {
+                                $bulkDelete->handle($records);
+                            } catch (DomainException $e) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Cannot delete products')
+                                    ->body($e->getMessage())
+                                    ->send();
+
+                                $action->halt();
+                            }
+                        }),
                 ]),
             ]);
     }

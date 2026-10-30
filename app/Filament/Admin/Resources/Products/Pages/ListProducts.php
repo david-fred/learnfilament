@@ -33,21 +33,25 @@ class ListProducts extends ListRecords
                     TextInput::make('amount')
                         ->label('Quantity')
                         ->numeric()
-                        ->required()
+                        ->minValue(1)
+                        ->required(),
 
                 ])
                 ->action(function (array $data) {
-                    Product::where('id', $data['product_id'])
-                        ->update([
-                            'amount' => $data['amount']
-                        ]);
-                }),
+                    Product::findOrFail($data['product_id'])
+                        ->increment('amount', $data['amount']);
 
+                    Notification::make()
+                        ->title('Stock added')
+                        ->success()
+                        ->send();
+                }),
             CreateAction::make()
                 ->successNotification(null)
-                ->action(function (CreateProductAction $createProduct, array $data) {
+                ->action(function (CreateProductAction $createProduct, array $data, CreateAction $action) {
                     try {
                         $createProduct->handle($data);
+
                         Notification::make()
                             ->title('Product created successfully')
                             ->success()
@@ -58,7 +62,10 @@ class ListProducts extends ListRecords
                             ->body($e->getMessage())
                             ->danger()
                             ->send();
+
                         Log::error($e->getMessage());
+
+                        $action->halt();
                     }
                 }),
         ];
