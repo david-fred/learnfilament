@@ -1,0 +1,892 @@
+app/Actions/CreateCustomerAction.php:
+
+<?php
+
+namespace App\Actions;
+
+use App\Models\Customer;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class CreateCustomerAction
+{
+
+    /**
+     * Create a new class instance.
+     */
+    public function handle(array $attributes): Customer
+    {
+        $validated = Validator::make($attributes, [
+            'name' => ['required', 'string', 'max:150'],
+            'email' => ['required', 'string', 'email', 'unique:customers']
+        ])->validate();
+
+        return DB::transaction(fn() => Customer::create($validated));
+    }
+}
+
+app/Filament/Admin/Resources/Customers/Pages/ListCustomers.php :
+
+<?php
+
+namespace App\Filament\Admin\Resources\Customers\Pages;
+
+use App\Filament\Admin\Resources\Customers\CustomerResource;
+use Filament\Actions\CreateAction;
+use Filament\Actions\EditAction;
+use Filament\Resources\Pages\ListRecords;
+use App\Actions\CreateCustomerAction;
+use Illuminate\Support\Facades\Log;
+use Throwable;
+use Filament\Forms\Components\TextInput;
+use App\Models\Customer;
+use Filament\Notifications\Notification;
+use App\Actions\UpdateCustomerAction;
+
+
+
+
+class ListCustomers extends ListRecords
+{
+    protected static string $resource = CustomerResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make()
+                ->successNotification(null)
+                ->schema([
+                    TextInput::make('name')
+                        ->required()
+                        ->maxLength(150),
+                    TextInput::make('email')
+                        ->required()
+                        ->email()
+                ])
+                ->action(function (CreateCustomerAction $createCustomer, array $data) {
+                    try {
+                        $createCustomer->handle($data);
+                        Notification::make()
+                            ->title('Customer created successfully')
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('Error creating customer')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                        Log::error($e->getMessage());
+                    }
+                })
+        ];
+    }
+}
+
+app/Filament/Admin/Resources/Customers/Tables/CustomersTable.php :
+
+<?php
+
+namespace App\Filament\Admin\Resources\Customers\Tables;
+
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+//use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Actions\BulkAction;
+//use Filament\Support\Enums\Icon;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use App\Actions\UpdateCustomerAction;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Forms\Components\TextInput;
+use App\Models\Customer;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
+use App\Actions\DeleteRecordAction;
+
+class CustomersTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('name')
+                    ->searchable(isGlobal: true)
+                    ->sortable(),
+                TextColumn::make('email')
+                    ->searchable()
+                    ->sortable(),
+                ToggleColumn::make('is_verified')
+                    ->label('Verified'),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->defaultSort('name')
+            ->filters([
+                //
+            ])
+            ->recordActions([
+                ViewAction::make(),
+                ActionGroup::make([
+                    EditAction::make()
+                    ->successNotification(null)
+                        ->schema([
+                            TextInput::make('name')->required(),
+                            TextInput::make('email')->required()->email(),
+                        ])
+                        ->action(function (Customer $record, array $data, UpdateCustomerAction $updateCustomer): void {
+                            try {
+                                $updateCustomer->handle($record, $data);
+                                Notification::make()->title('Customer updated successfully')->success()->send();
+                            } catch (\Throwable $e) {
+                                Notification::make()->title('Error updating customer')->body($e->getMessage())->danger()->send();
+                            }
+                        }),
+                    DeleteAction::make()
+                        ->successNotification(null)
+                        ->action(function (Customer $record, DeleteRecordAction $action) {
+                            $action->handle($record);
+                        }),
+                ]),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    // DeleteBulkAction::make(),
+                    BulkAction::make('markAsVerified')
+                        ->icon(Heroicon::OutlinedCheckBadge)
+                        ->requiresConfirmation()
+                        ->action(fn(EloquentCollection $records) => $records->each->update(['is_verified' => true]))
+                        ->deselectRecordsAfterCompletion(),
+                    //]),
+                ])
+            ]);
+    }
+}
+
+app/Models/Customer.php :
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Customer extends Model
+{
+    use HasFactory;
+
+    protected $guarded = [];
+}
+
+database/factories/CustomerFactory.php :
+
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Customer;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<Customer>
+ */
+class CustomerFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+        ];
+    }
+}
+
+database/migrations/2026_10_26_124113_create_customers_table.php :
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('customers', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamps();
+            $table->boolean('is_verified')->default(false);
+            
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('customers');
+    }
+};
+
+app/Actions/UpdateCustomerAction.php :
+
+<?php
+
+namespace App\Actions;
+use App\Models\Customer;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+
+class UpdateCustomerAction
+{
+    /**
+     * Create a new class instance.
+     */
+    public function handle(Customer $customer, array $attributes): Customer
+    {
+
+        $validated = Validator::make($attributes, [
+            'name' => ['required', 'string', 'max:150'],
+            'email' => ['required', 'string', 'email', Rule::unique('customers')->ignore($customer->id)],
+        ])->validate();
+
+        $customer->update($validated);
+
+        return $customer;
+    }
+}
+
+database/seeders/CustomerSeeder.php:
+
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class CustomerSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        \App\Models\Customer::factory()->count(10)->create();
+    }
+}
+
+
+app/Actions/CreateOrderAction.php :
+
+<?php
+
+namespace App\Actions;
+
+use App\Models\Order;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class CreateOrderAction
+{
+    public function handle(array $attributes): Order
+    {
+        $validated = Validator::make($attributes, [
+            'user_id' => ['required', 'exists:users,id'],
+            'product_id' => ['required', 'exists:products,id'],
+            'price' => ['required', 'numeric', 'min:10'],
+            'is_completed' => ['sometimes', 'boolean'],
+        ])->validate();
+
+        return DB::transaction(fn() => Order::create($validated));
+    }
+}
+
+
+app/Actions/UpdateOrderAction.php :
+
+<?php
+
+namespace App\Actions;
+
+use App\Models\Order;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class UpdateOrderAction
+{
+    public function handle(Order $order, array $attributes): Order
+    {
+        $validated = Validator::make($attributes, [
+            'user_id' => ['required', 'exists:users,id'],
+            'product_id' => ['required', 'exists:products,id'],
+            'price' => ['required', 'numeric', 'min:10'],
+            'is_completed' => ['sometimes', 'boolean'],
+        ])->validate();
+
+        return DB::transaction(fn() => tap($order)->update($validated));
+    }
+}
+
+app/Filament/Admin/Resources/Orders/Pages/EditOrder.php :
+
+<?php
+
+namespace App\Filament\Admin\Resources\Orders\Pages;
+
+use App\Filament\Admin\Resources\Orders\OrderResource;
+use Filament\Actions\DeleteAction;
+use Filament\Resources\Pages\EditRecord;
+
+class EditOrder extends EditRecord
+{
+    protected static string $resource = OrderResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            DeleteAction::make(),
+        ];
+    }
+}
+
+
+app/Filament/Admin/Resources/Orders/Pages/ListOrders.php :
+
+<?php
+
+namespace App\Filament\Admin\Resources\Orders\Pages;
+
+use App\Filament\Admin\Resources\Orders\OrderResource;
+use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
+use App\Actions\CreateOrderAction;
+use Filament\Notifications\Notification;
+use Throwable;
+use Illuminate\Support\Facades\Log;
+
+
+class ListOrders extends ListRecords
+{
+    protected static string $resource = OrderResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make()
+                ->action(function (CreateOrderAction $createOrder, array $data) {
+                    try {
+                        $createOrder->handle($data);
+                        Notification::make()
+                            ->title('Order created successfully')
+                            ->success()
+                            ->send();
+                    } catch (Throwable $e) {
+                        Notification::make()
+                            ->title('Error creating order')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                        Log::error($e->getMessage());
+                    }
+                }),
+        ];
+    }
+}
+
+
+app/Models/Order.php :
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Order extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'product_id',
+        'price',
+        'is_completed',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+}
+
+
+database/factories/OrderFactory.php :
+
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<Order>
+ */
+class OrderFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'product_id' => Product::factory(),
+            'price' => fake()->numberBetween(100, 10000),
+        ];
+    }
+}
+
+database/migrations/2026_10_27_134004_create_orders_table.php :
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('orders', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('product_id')->constrained();
+            $table->integer('price');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('orders');
+    }
+};
+
+
+database/seeders/OrderSeeder.php:
+
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Order;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class OrderSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        Order::factory(10)->create();
+    }
+}
+
+
+/Users/mac/Desktop/projects/laravel/learnfilament/app/Actions/CreateProductAction.php:
+
+<?php
+
+namespace App\Actions;
+
+use App\Models\Product;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use App\Enums\ProductStatusEnum;
+
+class CreateProductAction
+{
+    /**
+     * Create a new class instance.
+     */
+    public function handle(array $attributes): Product
+    {
+        $validated = Validator::make($attributes, [
+            'name' => ['required', 'string', 'max:150'],
+            'price' => ['required', 'numeric', 'min:10'],
+            'description' => ['nullable', 'string', 'max:150'],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'status' => ['required', Rule::enum(ProductStatusEnum::class)],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'is_active' => ['sometimes', 'boolean']
+        ])->validate();
+
+        //$product = Product::create($validated);
+        //return $product;
+        return DB::transaction(fn() => Product::create($validated));
+    }
+}
+
+app/Actions/UpdateProductAction.php :
+
+<?php
+
+namespace App\Actions;
+
+use App\Models\Product;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use App\Enums\ProductStatusEnum;
+
+class UpdateProductAction
+{
+    public function handle(Product $product, array $attributes): Product
+    {
+        $validated = Validator::make($attributes, [
+            'name' => ['required', 'string', 'max:150'],
+            'price' => ['required', 'numeric', 'min:10'],
+            'description' => ['nullable', 'string', 'max:150'],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'status' => ['required', Rule::enum(ProductStatusEnum::class)],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'is_active' => ['sometimes', 'boolean']
+        ])->validate();
+
+        return DB::transaction(fn() => tap($product)->update($validated));
+    }
+}
+
+app/Filament/Admin/Resources/Products/Tables/ProductsTable.php :
+
+<?php
+
+namespace App\Filament\Admin\Resources\Products\Tables;
+
+use App\Enums\ProductStatusEnum;
+use App\Models\Product;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Columns\CheckboxColumn;
+use Filament\Tables\Columns\SelectColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Columns\TextInputColumn;
+use Filament\Notifications\Notification;
+use Filament\Actions\ActionGroup;
+
+
+
+class ProductsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('name')
+                    ->searchable(),
+                // ->rules(['required', 'string', 'min:3', 'max:255']),
+                TextColumn::make('price')
+                    ->sortable()
+                    ->formatStateUsing(fn($state): float => $state / 100)
+                    ->money('NGN'),
+                TextColumn::make('description')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('category.name'),
+                // ->url(fn (Product $record): string => CategoryResource::getUrl('edit', ['record' => $record->category]))
+                TextColumn::make('tags.name')
+                    ->badge(),
+                TextColumn::make('created_at')
+                    ->since()
+                    ->sortable(),
+                SelectColumn::make('status')
+                    ->searchableOptions()
+                    ->options(ProductStatusEnum::class),
+                CheckboxColumn::make('is_active'),
+                TextColumn::make('amount')
+                    ->badge()
+                    ->label('Quantity'),
+            ])
+            ->defaultSort('name')
+            ->filters([
+                /* SelectFilter::make('category')
+                ->relationship('category','name'), */
+
+                SelectFilter::make('status')
+                    ->options(ProductStatusEnum::class),
+                SelectFilter::make('category')
+                    ->relationship('category', 'name'),
+                Filter::make('created_from')
+                    ->schema([
+                        DatePicker::make('created_from'),
+
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['created_from'], fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date));
+                    }),
+                Filter::make('created_until')
+                    ->schema([
+                        DatePicker::make('created_until'),
+
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['created_until'], fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date));
+                    }),
+            ], layout: FiltersLayout::AboveContent)
+            ->recordActions([
+                ActionGroup::make([
+                    Action::make('addStock')
+                        ->label('Add Stock')
+                        ->badge()
+                        ->color('success')
+                        ->schema([
+                            TextInput::make('quantity')
+                                ->numeric()
+                                ->required(),
+                        ])
+                        ->action(function (array $data, $record) {
+                            $record->increment('amount', $data['quantity']);
+                        }),
+
+                    EditAction::make(),
+                    DeleteAction::make()
+                        ->before(function (DeleteAction $action, Product $record) {
+                            if ($record->orders()->exists()) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Cannot delete product')
+                                    ->body('This product has existing orders.')
+                                    ->send();
+
+                                $action->halt();
+                            }
+                        })
+                ]),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+}
+
+app/Filament/Admin/Resources/Products/Pages/ListProducts.php :
+
+<?php
+
+namespace App\Filament\Admin\Resources\Products\Pages;
+
+use App\Actions\CreateProductAction;
+use App\Models\Product;
+use App\Filament\Admin\Resources\Products\ProductResource;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\Facades\Log;
+use Throwable;
+
+class ListProducts extends ListRecords
+{
+    protected static string $resource = ProductResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('addStock')
+                ->label('Add Stock')
+                ->color('gray')
+                ->schema([
+                    Select::make('product_id')
+                        ->label('Product')
+                        ->options(Product::query()->pluck('name', 'id'))
+                        ->required()
+                        ->searchable(),
+                    TextInput::make('amount')
+                        ->label('Quantity')
+                        ->numeric()
+                        ->required()
+
+                ])
+                ->action(function (array $data) {
+                    Product::where('id', $data['product_id'])
+                        ->update([
+                            'amount' => $data['amount']
+                        ]);
+                }),
+
+            CreateAction::make()
+                ->successNotification(null)
+                ->action(function (CreateProductAction $createProduct, array $data) {
+                    try {
+                        $createProduct->handle($data);
+                        Notification::make()
+                            ->title('Product created successfully')
+                            ->success()
+                            ->send();
+                    } catch (Throwable $e) {
+                        Notification::make()
+                            ->title('Error creating product')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                        Log::error($e->getMessage());
+                    }
+                }),
+        ];
+    }
+}
+
+
+database/migrations/2026_10_26_135840_create_products_table.php :
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->integer('price');
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('products');
+    }
+};
+
+
+database/factories/ProductFactory.php :
+
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Product;
+use App\Models\Category;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<Product>
+ */
+class ProductFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->unique()->word(),
+            'price' => fake()->numberBetween(100, 10000),
+            'description' => fake()->sentence(),
+            'amount' => fake()->numberBetween(1, 100),
+            'category_id' => Category::factory(),
+        ];
+    }
+}
+
+
+database/seeders/ProductSeeder.php :
+
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Product;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class ProductSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        product::factory()->count(10)->create();
+    }
+}
+
